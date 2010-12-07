@@ -495,23 +495,50 @@ int ypfs_release(const char *path, struct fuse_file_info *fi)
     
     char fpath[PATH_MAX];
     char datefpath[PATH_MAX];
-    int i;
+    int exif_found = 1;
+    ExifEntry *date_taken_entry;
     ypfs_fullpath(fpath, path);
     ExifData *picture_data = exif_data_new_from_file(fpath);
     if (picture_data == NULL) {
-        // TODO get modified time
+        exif_found = 0;
     } else {
-        ExifEntry *date_taken_entry = exif_data_get_entry(picture_data, EXIF_TAG_DATE_TIME);
+        date_taken_entry = exif_data_get_entry(picture_data, EXIF_TAG_DATE_TIME);
+        if (date_taken_entry == NULL) {
+            exif_found = 0;
+        } else {
+            if (date_taken_entry->data == NULL) {
+                exif_found = 0;
+            } else {
+                exif_found = 1;
+            }
+        }
+    }
 
+    if (exif_found) {
         char *date_taken = (char *)date_taken_entry->data;
         char *year = strtok(date_taken, ":");
         char *month = strtok(NULL, ":");
         char *day = strtok(NULL, " ");
         char datepath[PATH_MAX];
-        fprintf(stderr, "/Dates/%s/%s/%s/\n", year, month, day);
+        //fprintf(stderr, "/Dates/%s/%s/%s/\n", year, month, day);
         sprintf(datepath, "/Dates/%s/%s/%s/", year, month, day);
         ypfs_fullpath(datefpath, datepath);
-        fprintf(stderr, "%s\n", fpath);
+        //fprintf(stderr, "%s\n", datefpath);
+        __mkdir(datefpath);
+        rename(fpath, strcat(datefpath, path));
+
+    } else {
+        // fallback to file modified time
+        struct stat filestat;
+        stat(fpath, &filestat);
+        time_t mtime = filestat.st_mtime;
+        struct tm *ts;
+        ts = localtime(&mtime);
+        char datepath[PATH_MAX];
+        strftime(datepath, sizeof(datepath), "/Dates/%Y/%m/%d/", ts);
+        //fprintf(stderr, "%s\n", datepath);
+        ypfs_fullpath(datefpath, datepath);
+        //fprintf(stderr, "%s\n", datefpath);
         __mkdir(datefpath);
         rename(fpath, strcat(datefpath, path));
     }
