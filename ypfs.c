@@ -150,6 +150,9 @@ int ypfs_mkdir(const char *path, mode_t mode)
     
     ypfs_fullpath(fpath, path);
     
+    // TODO
+    // If parent directories do not exist, they need to be made like mkdir -p
+    // (plenty of examples on google for this)
     retstat = mkdir(fpath, mode);
     if (retstat < 0)
 	retstat = ypfs_error("ypfs_mkdir mkdir");
@@ -452,6 +455,14 @@ int ypfs_release(const char *path, struct fuse_file_info *fi)
 {
     int retstat = 0;
     
+    // TODO
+    // We copy files from elsewhere into the root directory.
+    // When the copying is done, release is the last call done.
+    // If the file is released and in the root directory, move to the proper place
+    // (with creating new directories as necessary)
+    // Will need to write a function to check for exif data
+    // If the exif exists, use the exif date to place the directory
+    // Otherwise, use old file modified date (since create date does not exist in linux)
     
     return retstat;
 }
