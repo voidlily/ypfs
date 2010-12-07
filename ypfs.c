@@ -49,7 +49,7 @@ int bb_error(char *str)
 //  it.
 void bb_fullpath(char fpath[PATH_MAX], const char *path)
 {
-    strcpy(fpath, BB_DATA->rootdir);
+    strcpy(fpath, YPFS_DATA->rootdir);
     strncat(fpath, path, PATH_MAX); // ridiculously long paths will
 				    // break here
 
@@ -670,7 +670,7 @@ void *bb_init(struct fuse_conn_info *conn)
 {
     
     
-    return BB_DATA;
+    return YPFS_DATA;
 }
 
 /**
@@ -842,10 +842,10 @@ int main(int argc, char *argv[])
 {
     int i;
     int fuse_stat;
-    struct bb_state *bb_data;
+    struct ypfs_state *ypfs_data;
 
-    bb_data = calloc(sizeof(struct bb_state), 1);
-    if (bb_data == NULL) {
+    ypfs_data = calloc(sizeof(struct ypfs_state), 1);
+    if (ypfs_data == NULL) {
 	perror("main calloc");
 	abort();
     }
@@ -860,14 +860,14 @@ int main(int argc, char *argv[])
     if (i == argc)
 	bb_usage();
     
-    bb_data->rootdir = realpath(argv[i], NULL);
+    ypfs_data->rootdir = realpath(argv[i], NULL);
 
     for (; i < argc; i++)
 	   argv[i] = argv[i+1];
     argc--;
 
     fprintf(stderr, "about to call fuse_main\n");
-    fuse_stat = fuse_main(argc, argv, &bb_oper, bb_data);
+    fuse_stat = fuse_main(argc, argv, &bb_oper, ypfs_data);
     fprintf(stderr, "fuse_main returned %d\n", fuse_stat);
     
     return fuse_stat;
