@@ -31,6 +31,10 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 
+#include <libexif/exif-data.h>
+#include <libexif/exif-tag.h>
+
+int __mkdir(const char *);
 int _mkdir(const char *, mode_t);
 
 // Report errors to logfile and give -errno to caller
@@ -156,6 +160,10 @@ int ypfs_mkdir(const char *path, mode_t mode)
 	retstat = ypfs_error("ypfs_mkdir mkdir");
     
     return retstat;
+}
+
+int __mkdir(const char *path) {
+    return _mkdir(path, S_IRWXU);
 }
 
 int _mkdir(const char *path, mode_t mode)
@@ -484,6 +492,29 @@ int ypfs_release(const char *path, struct fuse_file_info *fi)
     // Will need to write a function to check for exif data
     // If the exif exists, use the exif date to place the directory
     // Otherwise, use old file modified date (since create date does not exist in linux)
+    
+    char fpath[PATH_MAX];
+    char datefpath[PATH_MAX];
+    int i;
+    ypfs_fullpath(fpath, path);
+    ExifData *picture_data = exif_data_new_from_file(fpath);
+    if (picture_data == NULL) {
+        // TODO get modified time
+    } else {
+        ExifEntry *date_taken_entry = exif_data_get_entry(picture_data, EXIF_TAG_DATE_TIME);
+
+        char *date_taken = (char *)date_taken_entry->data;
+        char *year = strtok(date_taken, ":");
+        char *month = strtok(NULL, ":");
+        char *day = strtok(NULL, " ");
+        char datepath[PATH_MAX];
+        fprintf(stderr, "/Dates/%s/%s/%s/\n", year, month, day);
+        sprintf(datepath, "/Dates/%s/%s/%s/", year, month, day);
+        ypfs_fullpath(datefpath, datepath);
+        fprintf(stderr, "%s\n", fpath);
+        __mkdir(datefpath);
+        rename(fpath, strcat(datefpath, path));
+    }
     
     return retstat;
 }
