@@ -31,7 +31,6 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 
-#include "log.h"
 
 // Report errors to logfile and give -errno to caller
 int ypfs_error(char *str)
