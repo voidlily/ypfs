@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 
+int _mkdir(const char *, mode_t);
 
 // Report errors to logfile and give -errno to caller
 int ypfs_error(char *str)
@@ -150,14 +151,34 @@ int ypfs_mkdir(const char *path, mode_t mode)
     
     ypfs_fullpath(fpath, path);
     
-    // TODO
-    // If parent directories do not exist, they need to be made like mkdir -p
-    // (plenty of examples on google for this)
-    retstat = mkdir(fpath, mode);
+    retstat = _mkdir(fpath, mode);
     if (retstat < 0)
 	retstat = ypfs_error("ypfs_mkdir mkdir");
     
     return retstat;
+}
+
+int _mkdir(const char *path, mode_t mode)
+{
+        char opath[256];
+        char *p;
+        size_t len;
+        int res;
+
+        strncpy(opath, path, sizeof(opath));
+        len = strlen(opath);
+        if(opath[len - 1] == '/')
+                opath[len - 1] = '\0';
+        for(p = opath; *p; p++)
+                if(*p == '/') {
+                        *p = '\0';
+                        if(access(opath, F_OK))
+                                res = mkdir(opath, mode);
+                        *p = '/';
+                }
+        if(access(opath, F_OK))         /* if path is not terminated with / */
+                res = mkdir(opath, mode);
+        return res;
 }
 
 /** Remove a file */
